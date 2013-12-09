@@ -1,18 +1,15 @@
 require 'formula'
 
 class Winetricks < ScriptFileFormula
-  url 'http://winezeug.googlecode.com/svn-history/r1987/trunk/winetricks', :using => :curl
-  homepage 'http://wiki.winehq.org/winetricks'
-  version '20101106'
+  homepage 'http://code.google.com/p/winetricks/'
+  url 'http://winetricks.googlecode.com/svn-history/r1034/trunk/src/winetricks', :using => :curl
+  # since the version stated in the field is seldom updated, we append the revision number
+  version '20130707-r1034'
+  sha256 '00eb1a454815fa31061f762a819e2c4ae95b14c6507a9fff5485bc9f07719da5'
 
-  head 'http://winezeug.googlecode.com/svn/trunk/winetricks', :using => :curl
+  head 'http://winetricks.googlecode.com/svn/trunk/src/winetricks', :using => :curl
 
   depends_on 'cabextract'
-
-  # Don't provide an md5 for the HEAD build
-  unless ARGV.build_head?
-    md5 '5a6986df670e093381ee007f0c0c0e1f'
-  end
 
   def caveats; <<-EOS.undent
     winetricks is a set of utilities for wine, which is installed separately:

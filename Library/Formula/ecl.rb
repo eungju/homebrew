@@ -1,13 +1,14 @@
 require 'formula'
 
-class Ecl <Formula
-  url 'http://downloads.sourceforge.net/project/ecls/ecls/10.4/ecl-10.4.1.tar.gz'
+class Ecl < Formula
   homepage 'http://ecls.sourceforge.net/'
-  md5 'be53f5e55a3f07c7cfb5fb5cd9a2a3f0'
+  url 'http://downloads.sourceforge.net/project/ecls/ecls/13.5/ecl-13.5.1.tgz'
+  sha1 'db7f732e5e12182118f00c02d8d2531f6d6aefb2'
 
-  # doesn't start otherwise
-  skip_clean 'bin'
-  skip_clean 'lib'
+  fails_with :clang do
+    build 425
+    cause "The built-in gmp library fails to build with clang"
+  end
 
   def install
     ENV.deparallelize

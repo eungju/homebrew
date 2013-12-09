@@ -1,18 +1,18 @@
 require 'formula'
 
-class Libftdi <Formula
-  url "http://www.intra2net.com/en/developer/libftdi/download/libftdi-0.17.tar.gz"
+class Libftdi < Formula
   homepage 'http://www.intra2net.com/en/developer/libftdi'
-  md5 '810c69cfaa078b49795c224ef9b6b851'
+  url 'http://www.intra2net.com/en/developer/libftdi/download/libftdi1-1.0.tar.bz2'
+  sha1 '5be76cfd7cd36c5291054638f7caf4137303386f'
 
-  depends_on 'boost'
-  depends_on 'libusb-compat'
+  depends_on 'cmake' => :build
+  depends_on 'pkg-config' => :build
+  depends_on 'libusb'
+  depends_on 'boost' => :optional
 
   def install
-    mkdir 'libftdi-build'
-    Dir.chdir 'libftdi-build' do
-      system "../configure", "--prefix=#{prefix}"
-      system "make"
+    mkdir 'libftdi-build' do
+      system "cmake", "..", *std_cmake_args
       system "make install"
     end
   end

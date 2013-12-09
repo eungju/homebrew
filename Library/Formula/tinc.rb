@@ -1,14 +1,15 @@
 require 'formula'
 
-class Tinc <Formula
-  url 'http://www.tinc-vpn.org/packages/tinc-1.0.13.tar.gz'
+class Tinc < Formula
   homepage 'http://www.tinc-vpn.org'
-  md5 '86263994d38c750431efd17e9a91a248'
+  url 'http://www.tinc-vpn.org/packages/tinc-1.0.23.tar.gz'
+  sha1 '840dca0cc1d28a3e408f463693ef766c72d8bc90'
 
   depends_on 'lzo'
 
   def install
-    system "./configure", "--prefix=#{prefix}"
+    system "./configure", "--prefix=#{prefix}", "--sysconfdir=#{etc}"
+    system "make"
     system "make install"
   end
 end

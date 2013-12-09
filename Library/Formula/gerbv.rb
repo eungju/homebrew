@@ -1,22 +1,20 @@
 require 'formula'
 
-class Gerbv <Formula
-  url 'http://downloads.sourceforge.net/project/gerbv/gerbv/gerbv-2.4.0/gerbv-2.4.0.tar.gz'
+class Gerbv < Formula
   homepage 'http://gerbv.gpleda.org/'
-  md5 '56431417df2d246db87e225783097d75'
+  url 'http://downloads.sourceforge.net/project/gerbv/gerbv/gerbv-2.6.0/gerbv-2.6.0.tar.gz'
+  sha1 'c9f5e8cddbc0b685805de42f81b1ba37dcbe1989'
 
+  depends_on :x11
   depends_on 'pkg-config' => :build
   depends_on 'gtk+'
-  depends_on 'cairo' if MACOS_VERSION < 10.6
+  depends_on 'cairo'
 
   def install
-    system "./configure", "--disable-debug", "--disable-dependency-tracking",
+    system "./configure", "--disable-debug",
+                          "--disable-dependency-tracking",
                           "--prefix=#{prefix}",
                           "--disable-update-desktop-database"
     system "make install"
-  end
-
-  def caveats
-    "Note: gerbv is an X11 application."
   end
 end

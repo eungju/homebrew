@@ -1,16 +1,16 @@
 require 'formula'
 
-class Httrack <Formula
-  url 'http://download.httrack.com/cserv.php3?File=httrack.tar.gz'
+class Httrack < Formula
   homepage 'http://www.httrack.com/'
-  md5 '065d2d7d37e99ab788fe4968bc947ac8'
-  version '3.43-9D'
+  # url: Always use mirror.httrack.com when you link to a new version
+  # of HTTrack, as link to download.httrack.com will break on next
+  # HTTrack update.
+  url 'http://mirror.httrack.com/historical/httrack-3.47.27.tar.gz'
+  sha1 'cae1c6c02d2c59dc62e7abdbc6240414b764d292'
 
   def install
     ENV.deparallelize
-    system "./configure", "--disable-debug", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}",
-                          "--enable-shared=no"
+    system "./configure", "--disable-dependency-tracking", "--prefix=#{prefix}"
     system "make install"
     # Don't need Gnome integration
     rm_rf share+'applications'

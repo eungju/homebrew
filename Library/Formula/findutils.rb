@@ -1,12 +1,21 @@
 require 'formula'
 
-class Findutils <Formula
-  url 'http://ftp.gnu.org/pub/gnu/findutils/findutils-4.4.2.tar.gz'
+class Findutils < Formula
   homepage 'http://www.gnu.org/software/findutils/'
-  md5 '351cc4adb07d54877fa15f75fb77d39f'
+  url 'http://ftpmirror.gnu.org/findutils/findutils-4.4.2.tar.gz'
+  mirror 'http://ftp.gnu.org/gnu/findutils/findutils-4.4.2.tar.gz'
+  sha1 'e8dd88fa2cc58abffd0bfc1eddab9020231bb024'
+
+  option 'default-names', "Do not prepend 'g' to the binary"
 
   def install
-    system "./configure", "--prefix=#{prefix}", "--disable-debug", "--disable-dependency-tracking"
+    args = ["--prefix=#{prefix}",
+            "--localstatedir=#{var}/locate",
+            "--disable-dependency-tracking",
+            "--disable-debug"]
+    args << "--program-prefix=g" unless build.include? 'default-names'
+
+    system "./configure", *args
     system "make install"
   end
 end

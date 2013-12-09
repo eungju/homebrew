@@ -1,71 +1,93 @@
 require 'formula'
 
-def build_clang?; ARGV.include? '--with-clang'; end
-def build_universal?; ARGV.include? '--universal'; end
-def build_shared?; ARGV.include? '--shared'; end
-def build_rtti?; ARGV.include? '--rtti'; end
-
-class Clang <Formula
-  url       'http://llvm.org/releases/2.8/clang-2.8.tgz'
+class Clang < Formula
   homepage  'http://llvm.org/'
-  md5       '10e14c901fc3728eecbd5b829e011b59'
+  url       'http://llvm.org/releases/3.3/cfe-3.3.src.tar.gz'
+  sha1      'ccd6dbf2cdb1189a028b70bcb8a22509c25c74c8'
 end
 
-class Llvm <Formula
-  url       'http://llvm.org/releases/2.8/llvm-2.8.tgz'
+class Llvm < Formula
   homepage  'http://llvm.org/'
-  md5       '220d361b4d17051ff4bb21c64abe05ba'
+  url       'http://llvm.org/releases/3.3/llvm-3.3.src.tar.gz'
+  sha1      'c6c22d5593419e3cb47cbcf16d967640e5cce133'
 
-  def options
-    [['--with-clang', 'Also build & install clang'],
-     ['--shared', 'Build shared library'],
-     ['--rtti', 'Build with RTTI information'],
-     ['--universal', 'Build both i386 and x86_64 architectures']]
+  bottle do
+    sha1 '61854a2cf08a1398577f74fea191a749bec3e72d' => :mountain_lion
+    sha1 'fbe7b85a50f4b283ad55be020c7ddfbf655435ad' => :lion
+    sha1 'f68fdb89d44a72c83db1e55e25444de4dcde5375' => :snow_leopard
   end
+
+  option :universal
+  option 'with-clang', 'Build Clang support library'
+  option 'disable-shared', "Don't build LLVM as a shared library"
+  option 'all-targets', 'Build all target backends'
+  option 'rtti', 'Build with C++ RTTI'
+  option 'disable-assertions', 'Speeds up LLVM, but provides less debug information'
+
+  depends_on :python => :recommended
+
+  env :std if build.universal?
+
+  keg_only :provided_by_osx
 
   def install
-    ENV.gcc_4_2 # llvm can't compile itself
-
-    if build_shared? && build_universal?
-      onoe "Cannot specify both shared and universal (will not build)"
-      exit 1
+    if python and build.include? 'disable-shared'
+      raise 'The Python bindings need the shared library.'
     end
 
-    if build_clang?
-      clang_dir = Pathname.new(Dir.pwd)+'tools/clang'
-      Clang.new.brew { clang_dir.install Dir['*'] }
-    end
+    Clang.new("clang").brew do
+      (buildpath/'tools/clang').install Dir['*']
+    end if build.with? 'clang'
 
-    if build_universal?
+    if build.universal?
       ENV['UNIVERSAL'] = '1'
-      ENV['UNIVERSAL_ARCH'] = 'i386 x86_64'
+      ENV['UNIVERSAL_ARCH'] = Hardware::CPU.universal_archs.join(' ')
     end
 
-    ENV['REQUIRES_RTTI'] = '1' if build_rtti?
+    ENV['REQUIRES_RTTI'] = '1' if build.include? 'rtti'
 
-    configure_options = ["--prefix=#{prefix}",
-                         "--enable-targets=host-only",
-                         "--enable-optimized"]
+    args = [
+      "--prefix=#{prefix}",
+      "--enable-optimized",
+      # As of LLVM 3.1, attempting to build ocaml bindings with Homebrew's
+      # OCaml 3.12.1 results in errors.
+      "--disable-bindings",
+    ]
 
-    configure_options << "--enable-shared" if build_shared?
+    if build.include? 'all-targets'
+      args << "--enable-targets=all"
+    else
+      args << "--enable-targets=host"
+    end
+    args << "--enable-shared" unless build.include? 'disable-shared'
 
-    system "./configure", *configure_options
+    args << "--disable-assertions" if build.include? 'disable-assertions'
 
-    system "make" # separate steps required, otherwise the build fails
-    system "make install"
+    system "./configure", *args
+    system 'make', 'VERBOSE=1'
+    system 'make', 'VERBOSE=1', 'install'
 
-    if build_clang?
-      Dir.chdir clang_dir do
-        system "make install"
-      end
+    # install llvm python bindings
+    if python
+      python.site_packages.install buildpath/'bindings/python/llvm'
+      python.site_packages.install buildpath/'tools/clang/bindings/python/clang' if build.with? 'clang'
     end
   end
 
-  def caveats; <<-EOS
-    If you already have LLVM installed, then "brew upgrade llvm" might not
-    work. Instead, try:
-        $ brew rm llvm
-        $ brew install llvm
+  def test
+    system "#{bin}/llvm-config", "--version"
+  end
+
+  def caveats
+    s = ''
+    s += python.standard_caveats if python
+    s += <<-EOS.undent
+      Extra tools are installed in #{share}/llvm and #{share}/clang.
+
+      If you already have LLVM installed, then "brew upgrade llvm" might not work.
+      Instead, try:
+          brew rm llvm && brew install llvm
     EOS
   end
+
 end

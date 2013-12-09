@@ -1,10 +1,10 @@
 require 'formula'
 
-class Lockrun <Formula
-  url 'http://unixwiz.net/tools/lockrun.c'
+class Lockrun < Formula
   homepage 'http://unixwiz.net/tools/lockrun.html'
-  md5 '094b6c41be239de2ded94b9b7f590004'
-  version '20090625'
+  url 'http://unixwiz.net/tools/lockrun.c'
+  version '20130426'
+  sha1 '6b1e20f5413f02c93ff24e7f3eab28d01f66a1b6'
 
   def install
     system "#{ENV.cc} #{ENV.cflags} lockrun.c -o lockrun"

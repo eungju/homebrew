@@ -1,21 +1,23 @@
 require 'formula'
 
-class Ttytter <ScriptFileFormula
-  url 'http://www.floodgap.com/software/ttytter/dist1/1.1.09.txt'
+class Ttytter < Formula
   homepage 'http://www.floodgap.com/software/ttytter/'
-  md5 '5b19f500f391661d0b4d245f674f817d'
+  url 'http://www.floodgap.com/software/ttytter/dist2/2.1.00.txt'
+  sha1 'dd20d55aa819699b3e39ca4c35bf390b3e074db3'
 
   def install
-    bin.install '1.1.09.txt' => 'ttytter'
+    bin.install "#{version}.txt" => "ttytter"
   end
 
   def caveats; <<-EOS.undent
-      To take full advantage of readline features you must install readline:
-        $ brew install readline
-      and the Perl Module Term::ReadLine::TTYtter
-        $ cpan -i Term::ReadLine::TTYtter
-      Or if you have cpanminus:
-        $ cpanm Term::ReadLine::TTYtter
+    To take full advantage of readline features you must install readline:
+      brew install readline
+
+    and the Perl Module Term::ReadLine::TTYtter
+      cpan -i Term::ReadLine::TTYtter
+
+    Or if you have cpanminus:
+      cpanm Term::ReadLine::TTYtter
     EOS
   end
 end

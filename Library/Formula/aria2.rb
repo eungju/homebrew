@@ -1,14 +1,27 @@
 require 'formula'
 
-class Aria2 <Formula
-  url 'http://downloads.sourceforge.net/project/aria2/stable/aria2-1.10.9/aria2-1.10.9.tar.bz2'
-  md5 '856cd88e75c7b893b42f4b6b8f2c0ad1'
+class Aria2 < Formula
   homepage 'http://aria2.sourceforge.net/'
+  url 'http://downloads.sourceforge.net/project/aria2/stable/aria2-1.18.1/aria2-1.18.1.tar.bz2'
+  sha1 '050f521848353fe90568059768d73a5a6f7ff869'
+
+  depends_on 'pkg-config' => :build
+  depends_on :macos => :lion # Needs a c++11 compiler
 
   def install
-    fails_with_llvm "1.8.2 didn't work w/ LLVM"
-    system "./configure", "--disable-dependency-tracking",
-                          "--prefix=#{prefix}"
+    args = %W[
+      --disable-dependency-tracking
+      --prefix=#{prefix}
+      --with-appletls
+      --without-openssl
+      --without-gnutls
+      --without-libgmp
+      --without-libnettle
+      --without-libgcrypt
+    ]
+    system "./configure", *args
     system "make install"
+
+    bash_completion.install "doc/bash_completion/aria2c"
   end
 end

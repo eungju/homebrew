@@ -1,14 +1,18 @@
 require 'formula'
 
-class Libebml <Formula
-  # This is the official source, but it's frequently down. Use the mktoolnix mirror instead.
-  # url 'http://dl.matroska.org/downloads/libebml/libebml-0.7.8.tar.bz2'
-  url 'http://www.bunkus.org/videotools/mkvtoolnix/sources/libebml-1.0.0.tar.bz2'
+class Libebml < Formula
   homepage 'http://www.matroska.org/'
-  md5 '6d438f03d8928d83a2d120ed02705f03'
+  url 'http://dl.matroska.org/downloads/libebml/libebml-1.3.0.tar.bz2'
+  mirror 'http://www.bunkus.org/videotools/mkvtoolnix/sources/libebml-1.3.0.tar.bz2'
+  sha256 '83b074d6b62715aa0080406ea84d33df2e44b5d874096640233a4db49b8096de'
+
+  option :cxx11
 
   def install
-    system 'cp -r make/linux make/darwin'
-    system "cd make/darwin && make install prefix=#{prefix}"
+    ENV.cxx11 if build.cxx11?
+
+    cd 'make/linux' do
+      system "make", "install", "prefix=#{prefix}", "CXX=#{ENV.cxx}"
+    end
   end
 end

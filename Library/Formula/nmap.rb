@@ -1,17 +1,35 @@
 require 'formula'
 
-class Nmap <Formula
-  url 'http://nmap.org/dist/nmap-5.35DC1.tar.bz2'
-  homepage 'http://nmap.org/5/'
-  md5 '5bc2f8629f26716aa78d4bfe474a5d3a'
-  version '5.35DC1'
+class Nmap < Formula
+  homepage 'http://nmap.org/'
+  head 'https://guest:@svn.nmap.org/nmap/', :using => :svn
+  url 'http://nmap.org/dist/nmap-6.40.tar.bz2'
+  sha1 'ee1bec1bb62045c7c1fc69ff183b2ae9b97bd0eb'
+
+  depends_on "openssl" if MacOS.version <= :leopard
+
+  conflicts_with 'ndiff', :because => 'both install `ndiff` binaries'
+
+  fails_with :llvm do
+    build 2334
+  end
 
   def install
-    fails_with_llvm
     ENV.deparallelize
 
-    system "./configure", "--prefix=#{prefix}", "--without-zenmap"
-    system "make" # seperate steps required otherwise the build fails
+    args = %W[--prefix=#{prefix}
+              --with-libpcre=included
+              --with-liblua=included
+              --without-zenmap
+              --disable-universal]
+
+    if MacOS.version <= :leopard
+      openssl = Formula.factory('openssl')
+      args << "--with-openssl=#{openssl.prefix}"
+    end
+
+    system "./configure", *args
+    system "make" # separate steps required otherwise the build fails
     system "make install"
   end
 end

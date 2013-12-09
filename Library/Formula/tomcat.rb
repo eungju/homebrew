@@ -1,28 +1,41 @@
 require 'formula'
 
-class Tomcat <Formula
-  url 'http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.26/bin/apache-tomcat-6.0.26.tar.gz'
+class Tomcat < Formula
   homepage 'http://tomcat.apache.org/'
-  md5 'f9eafa9bfd620324d1270ae8f09a8c89'
+  url 'http://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-7/v7.0.47/bin/apache-tomcat-7.0.47.tar.gz'
+  sha1 'ea54881535fccb3dfd7da122358d983297d69196'
 
-  skip_clean :all
+  option "with-fulldocs", "Install full documentation locally"
 
-  def install
-    rm_rf Dir['bin/*.{cmd,bat]}']
-    libexec.install Dir['*']
-    (libexec+'logs').mkpath
-    bin.mkpath
-    Dir["#{libexec}/bin/*.sh"].each { |f| ln_s f, bin }
+  devel do
+    url 'http://www.apache.org/dyn/closer.cgi?path=tomcat/tomcat-8/v8.0.0-RC5/bin/apache-tomcat-8.0.0-RC5.tar.gz'
+    sha1 '17d310f962f0ce2de3956b122f5c604d97a87565'
+
+    resource 'fulldocs' do
+      url 'http://www.apache.org/dyn/closer.cgi?path=/tomcat/tomcat-8/v8.0.0-RC5/bin/apache-tomcat-8.0.0-RC5-fulldocs.tar.gz'
+      version '8.0.0-RC5'
+      sha1 'aac41f5259a987f6f9b787d3c4d2096e30ae529a'
+    end
   end
 
-  def caveats; <<-EOS.undent
-    Note: Some of the support scripts used by Tomcat have very generic names.
-    These are likely to conflict with support scripts used by other Java-based
-    server software.
+  resource 'fulldocs' do
+    url 'http://www.apache.org/dyn/closer.cgi?path=/tomcat/tomcat-7/v7.0.47/bin/apache-tomcat-7.0.47-fulldocs.tar.gz'
+    version '7.0.47'
+    sha1 '31d26adb234c4b58a74ad717aaf83b39f67e8ea3'
+  end
 
-    You may want to `brew unlink tomcat` and add:
-      #{bin}
-    to your PATH instead.
-    EOS
+  # Keep log folders
+  skip_clean 'libexec'
+
+  def install
+    # Remove Windows scripts
+    rm_rf Dir['bin/*.bat']
+
+    # Install files
+    prefix.install %w{ NOTICE LICENSE RELEASE-NOTES RUNNING.txt }
+    libexec.install Dir['*']
+    bin.install_symlink "#{libexec}/bin/catalina.sh" => "catalina"
+
+    (share/'fulldocs').install resource('fulldocs') if build.with? 'fulldocs'
   end
 end

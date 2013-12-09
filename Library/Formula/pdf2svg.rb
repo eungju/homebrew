@@ -1,16 +1,20 @@
 require 'formula'
 
-class Pdf2svg <Formula
-  url 'http://www.cityinthesky.co.uk/files/pdf2svg-0.2.1.tar.gz'
-  homepage 'http://www.cityinthesky.co.uk/pdf2svg.html'
-  md5 '59b3b9768166f73b77215e95d91f0a9d'
+class Pdf2svg < Formula
+  homepage 'http://www.cityinthesky.co.uk/opensource/pdf2svg'
+  url 'http://www.cityinthesky.co.uk/wp-content/uploads/2013/10/pdf2svg-0.2.2.tar.gz'
+  sha1 'e8d3332565f40705fbad5bd4eda9a001e563da1b'
 
-  depends_on "poppler"
-  depends_on "gtk+" # Includes atk and cairo, through pango, if needed
+  depends_on "pkg-config" => :build
+
+  depends_on :x11
+  depends_on "poppler" => "with-glib"
+  depends_on "gtk+"
+  depends_on "cairo"
 
   def install
-    ENV.x11
-    system "./configure", "--prefix=#{prefix}", "--disable-debug", "--disable-dependency-tracking"
+    system "./configure", "--disable-debug", "--disable-dependency-tracking",
+                          "--prefix=#{prefix}"
     system "make install"
   end
 end

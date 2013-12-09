@@ -1,90 +1,101 @@
 require 'formula'
 
-class Libiconv <Formula
-  url 'http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.13.1.tar.gz'
-  md5 '7ab33ebd26687c744a37264a330bbe9a'
-  homepage 'http://www.gnu.org/software/libiconv/'
-end
+class Glib < Formula
+  homepage 'http://developer.gnome.org/glib/'
+  url 'http://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz'
+  sha256 '056a9854c0966a0945e16146b3345b7a82562a5ba4d5516fd10398732aea5734'
 
-def build_tests?; ARGV.include? '--test'; end
-
-class Glib <Formula
-  url 'http://ftp.gnome.org/pub/gnome/sources/glib/2.24/glib-2.24.2.tar.bz2'
-  sha256 '3aeb521abd3642dd1224379f0e54915957e5010f888a4ae74afa0ad54da0160c'
-  homepage 'http://www.gtk.org'
+  option :universal
+  option 'test', 'Build a debug build and run tests. NOTE: Not all tests succeed yet'
 
   depends_on 'pkg-config' => :build
   depends_on 'gettext'
+  depends_on 'libffi'
 
-  def patches
-    mp = "http://trac.macports.org/export/69965/trunk/dports/devel/glib2/files/"
-    {
-      :p0 => [
-        mp+"patch-configure.in.diff",
-        mp+"patch-child-test.c.diff"
-      ]
-    }
+  fails_with :llvm do
+    build 2334
+    cause "Undefined symbol errors while linking"
   end
 
-  def options
-    [['--test', 'Build a debug build and run tests. NOTE: Tests may hang on "unix-streams".']]
+  resource 'config.h.ed' do
+    url 'https://trac.macports.org/export/111532/trunk/dports/devel/glib2/files/config.h.ed'
+    version '111532'
+    sha1 '0926f19d62769dfd3ff91a80ade5eff2c668ec54'
+  end if build.universal?
+
+  def patches
+    p = {}
+    p[:p1] = []
+    # https://bugzilla.gnome.org/show_bug.cgi?id=673135 Resolved as wontfix,
+    # but needed to fix an assumption about the location of the d-bus machine
+    # id file.
+    p[:p1] << "https://gist.github.com/jacknagel/6700436/raw/a94f21a9c5ccd10afa0a61b11455c880640f3133/glib-configurable-paths.patch"
+    # Fixes compilation with FSF GCC. Doesn't fix it on every platform, due
+    # to unrelated issues in GCC, but improves the situation.
+    # Patch submitted upstream: https://bugzilla.gnome.org/show_bug.cgi?id=672777
+    p[:p1] << "https://gist.github.com/mistydemeo/8c7eaf0940b6b9159779/raw/11b3b1f09d15ccf805b0914a15eece11685ea8a5/gio.diff"
+    p[:p0] = "https://trac.macports.org/export/111532/trunk/dports/devel/glib2/files/patch-configure.diff" if build.universal?
+    p
   end
 
   def install
-    fails_with_llvm "Undefined symbol errors while linking"
+    ENV.universal_binary if build.universal?
 
-    # Snow Leopard libiconv doesn't have a 64bit version of the libiconv_open
-    # function, which breaks things for us, so we build our own
-    # http://www.mail-archive.com/gtk-list@gnome.org/msg28747.html
-
-    iconvd = Pathname.getwd+'iconv'
-    iconvd.mkpath
-
-    Libiconv.new.brew do
-      system "./configure", "--disable-debug", "--disable-dependency-tracking",
-                            "--prefix=#{iconvd}",
-                            "--enable-static", "--disable-shared"
-      system "make install"
-    end
-
-    # indeed, amazingly, -w causes gcc to emit spurious errors for this package!
-    ENV.enable_warnings
-
-    # Statically link to libiconv so glib doesn't use the bugged version in 10.6
-    ENV['LDFLAGS'] += " #{iconvd}/lib/libiconv.a"
-
-    args = ["--disable-dependency-tracking", "--disable-rebuilds",
-            "--prefix=#{prefix}",
-            "--with-libiconv=gnu"]
-
-    args << "--disable-debug" unless build_tests?
+    # Disable dtrace; see https://trac.macports.org/ticket/30413
+    args = %W[
+      --disable-maintainer-mode
+      --disable-dependency-tracking
+      --disable-silent-rules
+      --disable-dtrace
+      --disable-libelf
+      --prefix=#{prefix}
+      --localstatedir=#{var}
+      --with-gio-module-dir=#{HOMEBREW_PREFIX}/lib/gio/modules
+    ]
 
     system "./configure", *args
 
-    # Fix for 64-bit support, from MacPorts
-    curl "http://trac.macports.org/export/69965/trunk/dports/devel/glib2/files/config.h.ed", "-O"
-    system "ed - config.h < config.h.ed"
+    if build.universal?
+      buildpath.install resource('config.h.ed')
+      system "ed -s - config.h <config.h.ed"
+    end
 
     system "make"
-    # Supress a folder already exists warning during install
-    # Also needed for running tests
-    ENV.j1
-    system "make test" if build_tests?
+    # the spawn-multithreaded tests require more open files
+    system "ulimit -n 1024; make check" if build.include? 'test'
     system "make install"
 
-    # This sucks; gettext is Keg only to prevent conflicts with the wider
-    # system, but pkg-config or glib is not smart enough to have determined
-    # that libintl.dylib isn't in the DYLIB_PATH so we have to add it
-    # manually.
-    gettext = Formula.factory('gettext')
+    # `pkg-config --libs glib-2.0` includes -lintl, and gettext itself does not
+    # have a pkgconfig file, so we add gettext lib and include paths here.
+    gettext = Formula.factory('gettext').opt_prefix
     inreplace lib+'pkgconfig/glib-2.0.pc' do |s|
       s.gsub! 'Libs: -L${libdir} -lglib-2.0 -lintl',
-              "Libs: -L${libdir} -lglib-2.0 -L#{gettext.lib} -lintl"
-
+              "Libs: -L${libdir} -lglib-2.0 -L#{gettext}/lib -lintl"
       s.gsub! 'Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include',
-              "Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include -I#{gettext.include}"
+              "Cflags: -I${includedir}/glib-2.0 -I${libdir}/glib-2.0/include -I#{gettext}/include"
     end
 
     (share+'gtk-doc').rmtree
+  end
+
+  test do
+    (testpath/'test.c').write <<-EOS.undent
+      #include <string.h>
+      #include <glib.h>
+
+      int main(void)
+      {
+          gchar *result_1, *result_2;
+          char *str = "string";
+
+          result_1 = g_convert(str, strlen(str), "ASCII", "UTF-8", NULL, NULL, NULL);
+          result_2 = g_convert(result_1, strlen(result_1), "UTF-8", "ASCII", NULL, NULL, NULL);
+
+          return (strcmp(str, result_2) == 0) ? 0 : 1;
+      }
+      EOS
+    flags = `pkg-config --cflags --libs glib-2.0`.split + ENV.cflags.split
+    system ENV.cc, "-o", "test", "test.c", *flags
+    system "./test"
   end
 end
